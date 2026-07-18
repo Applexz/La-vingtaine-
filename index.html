@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dossier n°30 — La disparition de la vingtaine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDE1C8; --paper-dark:#DCCBA0; --ink:#2B2620;
+    --red:#A7362B; --teal:#3F5449; --gold:#B08D57;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(0,0,0,0.05), transparent 40%),
+      radial-gradient(ellipse at 80% 90%, rgba(0,0,0,0.06), transparent 45%),
+      var(--paper);
+    color:var(--ink); font-family:'Courier Prime', monospace;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+  }
+  #app{max-width:720px;margin:0 auto;padding:24px 18px 70px;}
+  .screen{display:none;}
+  .screen.active{display:block; animation:fadeIn .35s ease;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  .stamp{
+    display:inline-block; border:3px solid var(--red); color:var(--red);
+    font-family:'Special Elite', monospace; text-transform:uppercase; letter-spacing:2px;
+    padding:4px 10px; transform:rotate(-3deg); font-size:12px; opacity:0.85;
+  }
+
+  /* Corner fold effect for cards */
+  .fold{ position:relative; }
+  .fold::after{
+    content:''; position:absolute; top:0; right:0; width:0; height:0;
+    border-style:solid; border-width:0 22px 22px 0;
+    border-color:transparent var(--paper) transparent transparent;
+    filter:drop-shadow(-1px 1px 1px rgba(0,0,0,0.25));
+  }
+
+  .cover{
+    border:2px solid var(--ink); background:var(--paper-dark); padding:32px 22px;
+    margin-top:20px; box-shadow:6px 6px 0 rgba(43,38,32,0.15); position:relative; overflow:hidden;
+  }
+  .case-meta{
+    display:flex; justify-content:space-between; font-size:10px; letter-spacing:1px;
+    font-family:'Special Elite'; text-transform:uppercase; opacity:0.7; margin-bottom:10px;
+  }
+  .case-no{font-family:'Special Elite'; font-size:12px; letter-spacing:3px; color:var(--red); margin-bottom:6px;}
+  .cover h1{font-family:'Special Elite'; font-size:clamp(26px,7vw,40px); line-height:1.15; margin:6px 0; text-transform:uppercase;}
+  .cover p{font-size:15px; line-height:1.7; margin:0 0 12px;}
+  .hand-note{font-family:'Caveat', cursive; font-size:22px; color:var(--red); transform:rotate(-1.5deg); margin-top:6px;}
+
+  .stamp-confidential{
+    position:absolute; top:14px; right:-38px; width:170px; text-align:center;
+    border:3px solid var(--red); color:var(--red); font-family:'Special Elite';
+    text-transform:uppercase; letter-spacing:2px; font-size:13px; padding:6px 0;
+    transform:rotate(18deg) scale(0); opacity:0;
+    animation:stampIn .5s ease-out 0.3s forwards;
+  }
+  @keyframes stampIn{
+    0%{ transform:rotate(18deg) scale(2.2); opacity:0; }
+    60%{ transform:rotate(18deg) scale(0.9); opacity:1; }
+    80%{ transform:rotate(18deg) scale(1.08); }
+    100%{ transform:rotate(18deg) scale(1); opacity:1; }
+  }
+
+  .redacted{
+    background:var(--ink); color:transparent; cursor:pointer; border-radius:2px;
+    padding:0 2px; transition:background .2s ease, color .05s ease;
+    user-select:none;
+  }
+  .redacted.revealed{ background:transparent; color:var(--red); font-weight:bold; }
+
+  button.btn{
+    font-family:'Special Elite', monospace; background:var(--ink); color:var(--paper);
+    border:none; padding:14px 20px; font-size:15px; letter-spacing:1px; text-transform:uppercase;
+    cursor:pointer; margin-top:18px; width:100%; transition:transform .15s ease, background .15s ease;
+  }
+  button.btn:hover{background:var(--red); transform:translateY(-1px);}
+  button.btn.ghost{background:transparent; color:var(--ink); border:2px solid var(--ink);}
+  button.btn.ghost:hover{background:var(--ink); color:var(--paper);}
+  button.btn.small{width:auto; padding:9px 16px; font-size:12px; margin-top:10px;}
+
+  /* Timeline / corkboard */
+  .corkboard{
+    border:2px solid var(--ink); background:#C9B384; padding:22px 4px 16px;
+    margin-top:18px; box-shadow:6px 6px 0 rgba(43,38,32,0.15);
+    background-image: radial-gradient(rgba(0,0,0,0.06) 1px, transparent 1px);
+    background-size: 10px 10px;
+  }
+  .corkboard h4{font-family:'Special Elite'; font-size:13px; text-transform:uppercase; letter-spacing:1px; margin:0 0 18px; color:var(--ink); text-align:center;}
+  .timeline-scroll{ overflow-x:auto; padding:0 12px 8px; -webkit-overflow-scrolling:touch; }
+  .timeline{ position:relative; display:flex; align-items:center; gap:26px; padding:0 10px; min-width:640px; }
+  .timeline::before{
+    content:''; position:absolute; left:0; right:0; top:16px; height:2px;
+    background:var(--red); opacity:0.7;
+  }
+  .tl-point{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; width:46px; cursor:pointer; }
+  .tl-dot{ width:14px; height:14px; border-radius:50%; background:var(--red); border:2px solid var(--paper); transition:transform .15s ease; }
+  .tl-point:hover .tl-dot, .tl-point.active .tl-dot{ transform:scale(1.3); }
+  .tl-year{ font-family:'Special Elite'; font-size:10px; margin-top:6px; }
+  .tl-point.endpoint .tl-dot{ width:18px; height:18px; background:var(--ink); }
+  .tl-hint{ font-size:9px; opacity:0.55; margin-top:1px; }
+  .tl-note{
+    display:none; margin:14px 12px 0; padding:12px 14px; background:var(--paper);
+    border:2px solid var(--red); font-size:13px; line-height:1.6; position:relative;
+  }
+  .tl-note.show{ display:block; animation:fadeIn .25s ease; }
+  .tl-note .tl-note-year{ font-family:'Special Elite'; color:var(--red); font-size:12px; margin-bottom:4px; display:block; }
+
+  .team-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px;}
+  @media(max-width:480px){.team-grid{grid-template-columns:1fr;}}
+  .team-card{
+    border:2px solid var(--ink); background:var(--paper-dark); padding:14px; text-align:center;
+    cursor:pointer; box-shadow:4px 4px 0 rgba(43,38,32,0.15); transition:transform .15s ease;
+  }
+  .team-card:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 rgba(43,38,32,0.2);}
+  .team-card.decoy{ cursor:default; opacity:0.55; filter:grayscale(0.4); }
+  .team-card.decoy:hover{ transform:none; box-shadow:4px 4px 0 rgba(43,38,32,0.15); }
+  .case-tag{font-family:'Special Elite'; font-size:10px; letter-spacing:1px; color:var(--red); text-transform:uppercase; margin-bottom:8px;}
+  .polaroid{
+    background:#fff; padding:8px 8px 22px; margin:0 auto 8px; width:92px;
+    box-shadow:0 3px 6px rgba(0,0,0,0.25);
+  }
+  .polaroid .photo{
+    width:100%; aspect-ratio:1/1; background:#333; display:flex; align-items:center; justify-content:center;
+    font-size:34px; filter:grayscale(1) contrast(1.1) brightness(0.9); opacity:0.85;
+  }
+  .polaroid .cap{font-family:'Caveat', cursive; font-size:12px; text-align:center; color:#333; margin-top:4px;}
+  .team-card h3{margin:2px 0 0; font-family:'Special Elite'; font-size:14px;}
+
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'Special Elite'; font-size:12px; letter-spacing:1px; text-transform:uppercase;
+    opacity:0.8; margin-bottom:10px;
+  }
+  .topbar button{background:none; border:none; color:var(--ink); font-family:'Special Elite';
+    font-size:12px; letter-spacing:1px; text-transform:uppercase; cursor:pointer; text-decoration:underline; padding:0;}
+
+  .zone-head{margin:6px 0 16px;}
+  .zone-head .case-tag{margin-bottom:4px;}
+  .zone-head h2{font-family:'Special Elite'; font-size:24px; margin:4px 0 2px;}
+  .zone-head p{font-size:14px; line-height:1.7; opacity:0.9;}
+
+  .card{border:2px solid var(--ink); background:var(--paper-dark); padding:18px; margin-top:14px; box-shadow:5px 5px 0 rgba(43,38,32,0.15);}
+  .card h4{font-family:'Special Elite'; font-size:13px; text-transform:uppercase; letter-spacing:1px; margin:0 0 10px; color:var(--teal);}
+
+  .hint-item{
+    position:relative; border-left:3px solid var(--gold); padding:8px 44px 8px 12px; font-size:14px; line-height:1.6;
+    background:rgba(176,141,87,0.12); margin-bottom:12px; display:none;
+  }
+  .hint-item.show{display:block; animation:fadeIn .3s ease;}
+  .hint-level{font-family:'Special Elite'; font-size:10px; letter-spacing:1px; color:var(--red); text-transform:uppercase; display:block; margin-bottom:4px;}
+  .hint-stamp{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%) rotate(-14deg);
+    border:2px solid var(--teal); color:var(--teal); font-family:'Special Elite'; font-size:9px;
+    text-transform:uppercase; letter-spacing:1px; padding:2px 4px; opacity:0.85; white-space:nowrap;
+  }
+
+  .footer-nav{text-align:center; margin-top:26px; font-size:12px;}
+  .footer-nav a{color:var(--ink); cursor:pointer; text-decoration:underline;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- COVER -->
+  <div class="screen active" id="screen-cover">
+    <div class="cover fold">
+      <div class="stamp-confidential">CONFIDENTIEL</div>
+      <div class="case-meta">
+        <span>Dossier n°30</span>
+      </div>
+      <div class="case-no">STATUT : EN COURS D'INVESTIGATION</div>
+      <h1>La disparition<br>de la vingtaine</h1>
+      <p>Quatre zones de la maison, quatre équipes, quatre <span class="redacted" onclick="toggleRedact(this)">secrets</span> à mettre au jour. Ce site est votre allié d'enquête : le briefing, la charte du chercheur, et des indices en cas de blocage.</p>
+      <p>Tout le reste se joue dans le <span class="redacted" onclick="toggleRedact(this)">monde réel</span>. À vous de fouiller.</p>
+      <div class="hand-note">— Bonne chance, agents.</div>
+      <button class="btn" onclick="goTo('screen-timeline')">Ouvrir le dossier</button>
+      <div class="footer-nav"><a onclick="goTo('screen-rules')">Lire la charte du chercheur →</a></div>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="screen" id="screen-timeline">
+    <div class="topbar"><span>Dix ans de dossier</span><button onclick="goTo('screen-cover')">‹ Retour</button></div>
+    <span class="stamp">Chronologie de l'affaire</span>
+    <div class="corkboard">
+      <h4>2016 — 2026</h4>
+      <div class="timeline-scroll"><div class="timeline" id="timelineRow"></div></div>
+      <div class="tl-note" id="tlNote"></div>
+    </div>
+    <p style="font-size:12px; text-align:center; opacity:0.6; margin-top:6px;">(Faites glisser pour voir toute la frise, tapez une année pour un extrait du dossier)</p>
+    <p style="font-size:13px; line-height:1.7; margin-top:14px; opacity:0.85;">Dix années de preuves accumulées, dispersées dans quatre pièces de la maison. À vous de les rassembler avant que le dossier ne se referme pour de bon.</p>
+    <button class="btn" onclick="goTo('screen-teams')">Choisir ma zone</button>
+  </div>
+
+  <!-- RULES -->
+  <div class="screen" id="screen-rules">
+    <div class="topbar"><span>Charte du chercheur</span><button onclick="goTo('screen-cover')">‹ Retour</button></div>
+    <span class="stamp">Règles communes</span>
+    <div class="card fold">
+      <ul id="commonRulesList" style="margin:0; padding-left:18px; font-size:14px; line-height:1.9;"></ul>
+    </div>
+    <div class="footer-nav"><a onclick="goTo('screen-teams')">Choisir ma zone →</a></div>
+  </div>
+
+  <!-- TEAM SELECT -->
+  <div class="screen" id="screen-teams">
+    <div class="topbar"><span>Choisissez votre zone</span><button onclick="goTo('screen-cover')">‹ Retour</button></div>
+    <span class="stamp">Répartition des équipes</span>
+    <div class="team-grid" id="teamGrid"></div>
+    <div class="footer-nav"><a onclick="goTo('screen-rules')">Revoir la charte du chercheur</a></div>
+  </div>
+
+  <!-- ZONE -->
+  <div class="screen" id="screen-zone">
+    <div class="topbar"><span id="zoneCounter"></span><button onclick="goTo('screen-teams')">‹ Changer de zone</button></div>
+    <div class="zone-head">
+      <div class="case-tag" id="z-tag"></div>
+      <h2 id="z-name"></h2>
+      <p id="z-desc"></p>
+    </div>
+
+    <div class="card fold">
+      <h4>Règle de cette pièce</h4>
+      <p id="z-rule" style="font-size:14px; line-height:1.7; margin:0;"></p>
+      <div class="footer-nav" style="margin-top:8px;"><a onclick="goTo('screen-rules')">Voir la charte complète →</a></div>
+    </div>
+
+    <div class="card fold">
+      <h4>Besoin d'aide ?</h4>
+      <div id="hintList"></div>
+      <button class="btn ghost small" id="hintBtn" onclick="revealNextHint()">Indice suivant</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   CONFIGURATION — site 100% statique, aucune donnée enregistrée.
+   ============================================================ */
+const COMMON_RULES = [
+  "Rien n'est caché plus haut qu'un bras tendu.",
+  "Les meubles et placards fermés restent fermés, sauf mention explicite obtenue en jeu.",
+  "On ne déplace pas les meubles lourds, on ne démonte rien, on ne dévisse rien.",
+  "Un indice a toujours l'air d'un indice, le reste c'est juste la déco, du bordel ou les deux.",
+  "Siera et Salem sont là pour veiller à votre sécurité. Veillez à être bienveillants avec l'équipe de sécurité de cette aventure."
+];
+
+const ZONES = [
+  {
+    id:'sdb', icon:'💧', tag:'14',
+    name:'Salle de bain',
+    desc:"Qu'est-ce que la vingtaine de Yoann a bien pu perdre dans cette pièce ?",
+    rule:"Manipulez les objets en douceur.",
+    hints:[
+      "Certains messages ne se voient qu'à la bonne lumière. Vous avez peut-être déjà l'outil qu'il faut, posé bien en évidence.",
+      "Levez les yeux vers le miroir. Et n'oubliez pas vos 4 lettres avant de tourner la roue.",
+      "Utilisez la lampe UV sur le haut du miroir pour révéler le message secret, puis décalez-le de 7 lettres avec la roue."
+    ]
+  },
+  {
+    id:'buanderie', icon:'🌀', tag:'22',
+    name:'Buanderie',
+    desc:"Qu'est-ce que la vingtaine de Yoann a bien pu oublier dans cette pièce ?",
+    rule:"Fouille des placards autorisée dans cette pièce. Vous pouvez ouvrir les appareils à l'arrêt, mais ne touchez pas aux produits d'entretien (on ne boit pas la lessive pour vérifier qu'il y a un truc au fond du bidon).",
+    hints:[
+      "Certains pictogrammes se lisent tout seuls. D'autres ont besoin qu'on les calcule à partir des premiers.",
+      "Les cartes sur l'étendoir donnent des valeurs de base. Cherchez les cartes planquées ailleurs dans la pièce : elles contiennent des équations à résoudre avec ces valeurs.",
+      "Résolvez les 4 pictogrammes indiqués sur l'étiquette du cadenas à l'aide des équations trouvées, dans l'ordre indiqué."
+    ]
+  },
+  {
+    id:'bureau', icon:'💻', tag:'08',
+    name:'Bureau',
+    desc:"Qu'est-ce que la vingtaine de Yoann a bien pu cacher dans cette pièce ?",
+    rule:"Ne testez pas de mots de passe au hasard sur l'ordinateur ; en cas de blocage, appelez Camille.",
+    hints:[
+      "Quelque chose dort dans cette pièce, et il lui faut un mot de passe pour se réveiller.",
+      "Le mot de passe est caché en deux parties séparées : une légende, et un message à traduire grâce à elle.",
+      "La légende est sous l'assise du siège, le message codé sous un coussin du canapé. Traduisez, puis tapez le mot sur l'ordinateur."
+    ]
+  },
+  {
+    id:'jardin', icon:'🍃', tag:'19',
+    name:'Jardin',
+    desc:"Qu'est-ce que la vingtaine de Yoann a bien pu enfouir dans ce jardin ?",
+    rule:"Restez dans les limites du jardin. On ne grimpe pas aux arbres, on ne piétine pas les plantations et on ne creuse pas de trou, personne n'a enterré de trésor.",
+    hints:[
+      "Le jardin garde plusieurs secrets numériques, et une boîte quelque part attend de les recevoir.",
+      "Quatre coins du jardin, quatre chiffres. Une devinette sur la boîte elle-même vous dira dans quel ordre les utiliser.",
+      "Cherchez vos chiffres au potager, aux lauriers, au prunier et au tilleul. La boîte se trouve aux racines du tilleul."
+    ]
+  }
+];
+
+// Ordre d'affichage volontairement différent de l'ordre réel du code final
+const DISPLAY_ORDER = ['bureau','jardin','sdb','buanderie'];
+
+const DECOYS = [
+  { tag:'02', title:"Un mixtape sans étiquette", status:"Affaire classée — non concluante" },
+  { tag:'11', title:"Vol honteux d'une mousse au chocolat", status:"Affaire classée — sans suite" }
+];
+
+let currentZone = null;
+let hintsShown = 0;
+
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='screen-teams') renderTeamGrid();
+  if(id==='screen-rules') renderRules();
+  if(id==='screen-timeline') renderTimeline();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function toggleRedact(el){
+  el.classList.toggle('revealed');
+}
+
+function renderRules(){
+  document.getElementById('commonRulesList').innerHTML = COMMON_RULES.map(r=>`<li>${r}</li>`).join('');
+}
+
+// Notes d'ambiance par année, à personnaliser librement (rien ici ne doit spoiler une énigme)
+const TIMELINE_NOTES = {
+  2016: "Rapport d'ouverture du dossier. Le sujet ne s'appelle pas encore \"la vingtaine\", juste \"Yoann, 20 ans\".",
+  2017: "Relevés de nuits sorties nombreux, difficiles à recompter. Odeur de fumée et de bière dans les pièces jointes.",
+  2018: "Témoignages contradictoires, non exploitables.",
+  2019: "Document taché, illisible aux trois quarts.",
+  2020: "Rapport confiné. Peu d'activité notable.",
+  2021: "Note ajoutée en marge : \"ça devient sérieux\".",
+  2022: "Dossier scellé par erreur puis rouvert.",
+  2023: "Aucune anomalie signalée. Suspect.",
+  2024: "Une photo agrafée ici a disparu.",
+  2025: "Dernière entrée connue avant la disparition.",
+  2026: "Dossier en cours. La suite dépend de vous."
+};
+
+function renderTimeline(){
+  const row = document.getElementById('timelineRow');
+  const note = document.getElementById('tlNote');
+  note.classList.remove('show');
+  const years = [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026];
+  row.innerHTML = years.map(y=>{
+    const isEnd = (y===2016 || y===2026);
+    return `<div class="tl-point ${isEnd?'endpoint':''}" data-year="${y}" onclick="showYearNote(${y}, this)">
+      <div class="tl-dot"></div>
+      <div class="tl-year">${y}</div>
+      <div class="tl-hint">${isEnd ? (y===2016?'début':'?') : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function showYearNote(year, el){
+  document.querySelectorAll('.tl-point').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  const note = document.getElementById('tlNote');
+  note.innerHTML = `<span class="tl-note-year">${year}</span>${TIMELINE_NOTES[year] || "Aucune note disponible."}`;
+  note.classList.add('show');
+}
+
+function renderTeamGrid(){
+  const grid = document.getElementById('teamGrid');
+  grid.innerHTML = '';
+  const orderedZones = DISPLAY_ORDER.map(id => ZONES.find(z=>z.id===id));
+  orderedZones.forEach(z=>{
+    const card = document.createElement('div');
+    card.className = 'team-card';
+    card.onclick = ()=>openZone(z.id);
+    card.innerHTML = `
+      <div class="case-tag">Pièce à conviction n°${z.tag}</div>
+      <div class="polaroid"><div class="photo">${z.icon}</div><div class="cap">Non identifié</div></div>
+      <h3>${z.name}</h3>`;
+    grid.appendChild(card);
+  });
+  DECOYS.forEach(d=>{
+    const card = document.createElement('div');
+    card.className = 'team-card decoy';
+    card.innerHTML = `
+      <div class="case-tag">Pièce à conviction n°${d.tag}</div>
+      <div class="polaroid"><div class="photo">❓</div><div class="cap">${d.title}</div></div>
+      <h3 style="font-size:12px; opacity:0.75;">${d.status}</h3>`;
+    grid.appendChild(card);
+  });
+}
+
+function openZone(id){
+  currentZone = ZONES.find(z=>z.id===id);
+  hintsShown = 0;
+  document.getElementById('zoneCounter').textContent = currentZone.name;
+  document.getElementById('z-tag').textContent = `Pièce à conviction n°${currentZone.tag}`;
+  document.getElementById('z-name').textContent = currentZone.name;
+  document.getElementById('z-desc').textContent = currentZone.desc;
+  document.getElementById('z-rule').textContent = currentZone.rule;
+  renderHints();
+  goTo('screen-zone');
+}
+
+function renderHints(){
+  const list = document.getElementById('hintList');
+  list.innerHTML = '';
+  for(let i=0;i<hintsShown;i++){
+    const div = document.createElement('div');
+    div.className = 'hint-item show';
+    div.innerHTML = `<span class="hint-level">Indice ${i+1}</span>${currentZone.hints[i]}<span class="hint-stamp">Validé</span>`;
+    list.appendChild(div);
+  }
+  const btn = document.getElementById('hintBtn');
+  btn.style.display = hintsShown >= currentZone.hints.length ? 'none' : 'inline-block';
+}
+function revealNextHint(){
+  if(hintsShown < currentZone.hints.length){
+    hintsShown++;
+    renderHints();
+  }
+}
+
+renderTeamGrid();
+</script>
+</body>
+</html>
